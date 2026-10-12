@@ -6,6 +6,7 @@ import { takeScreenshot } from '../utils/screenshots.js';
 import { detectPageElements } from '../browser/safe-actions.js';
 import { prepareDownload, saveMetadata } from '../utils/file-manager.js';
 import { ensureProjectInContext } from '../navigation/project-navigator.js';
+import { setVideoMode } from '../browser/model-selector.js';
 import { get } from '../utils/config.js';
 import fs from 'fs';
 import path from 'path';
@@ -55,6 +56,14 @@ export async function handleGenerateVideo(args) {
 
     const duration = args.duration || '4s';
 
+    // Poner la barra en modo VÍDEO con el modelo/duración pedidos (el repo
+    // original nunca lo hacía: generaba imágenes con el modelo por defecto).
+    const chipText = await setVideoMode(page, { model, duration });
+    if (!/V[íi]deo/i.test(chipText)) {
+      throw new FlowError(ErrorCodes.UNKNOWN_UI_CHANGE,
+        'No se pudo poner Flow en modo vídeo. Chip: ' + chipText, { chipText });
+    }
+
     // Find prompt input (agent bar, contenteditable/textarea)
     let promptInput = null;
     const promptCandidates = [
@@ -78,17 +87,16 @@ export async function handleGenerateVideo(args) {
     // and "video" makes the agent generate directly instead of asking questions.
     // The fidelity clause binds the agent to the user's description verbatim.
     const imperativePrompt =
-      `Genera subito un video di ${duration} con il modello ${model}, senza farmi domande e senza chiedere chiarimenti. ` +
-      `Attieniti FEDELMENTE a questa descrizione: includi TUTTI gli elementi, soggetti, azioni e ` +
-      `dettagli indicati, non aggiungere nulla che non sia richiesto e non omettere nulla. ` +
-      `Descrizione: ${args.prompt}`;
+      `Genera ahora un video de ${duration} con el modelo ${model}, sin hacerme preguntas y sin pedir aclaraciones. Cíñete FIELMENTE a esta descripción: incluye TODOS los elementos, sujetos, acciones y detalles indicados, no añadas nada que no se pida y no omitas nada. Descripción: ${args.prompt}`;
 
     await page.keyboard.press('Escape');
     await page.waitForTimeout(400);
     await promptInput.click();
     await promptInput.fill('');
     await page.waitForTimeout(200);
-    await promptInput.type(imperativePrompt, { delay: 12 });
+    // Slate no aguanta type() carácter a carácter con prompts largos: insertText
+    // mete el texto de golpe por el mismo canal de entrada del navegador.
+    await page.keyboard.insertText(imperativePrompt.replace(/\s+/g, ' ').trim());
     await page.waitForTimeout(500);
 
     // DECISION POINT — without auto_confirm we stop before spending credits.
@@ -180,13 +188,17 @@ export async function handleGenerateVideo(args) {
       //    so getByText (tag-agnostic, exact) is required. Exact avoids matching
       //    "Approva e non chiedermelo più".
       if (!approved) {
+        const APPROVE_LABELS = ['Approva', 'Aprobar', 'Approve', 'Approuver'];
+        outer:
         for (const frame of page.frames()) {
-          const approve = frame.getByText('Approva', { exact: true }).first();
-          if (await approve.isVisible().catch(() => false)) {
-            await approve.click().catch(() => {});
-            approved = true;
-            logger.info('Confirmation dialog approved (credits spent)');
-            break;
+          for (const approveLabel of APPROVE_LABELS) {
+            const approve = frame.getByText(approveLabel, { exact: true }).first();
+            if (await approve.isVisible().catch(() => false)) {
+              await approve.click().catch(() => {});
+              approved = true;
+              logger.info('Confirmation dialog approved (credits spent)', { label: approveLabel });
+              break outer;
+            }
           }
         }
       }
