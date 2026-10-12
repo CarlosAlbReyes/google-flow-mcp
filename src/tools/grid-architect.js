@@ -31,7 +31,7 @@ export async function handleUseGridArchitect(args) {
 
     // Find and click Grid Architect within tools
     const gaLocator = page.locator(
-      'a:has-text("Grille"), a:has-text("Grid"), button:has-text("Grille"), button:has-text("Grid"), text=Architect'
+      'a:has-text("Grille"), a:has-text("Grid"), a:has-text("Cuadrícula"), button:has-text("Grille"), button:has-text("Grid"), button:has-text("Cuadrícula"), text=Architect'
     ).first();
     if (await gaLocator.isVisible().catch(() => false)) {
       await gaLocator.click();

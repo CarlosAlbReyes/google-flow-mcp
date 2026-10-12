@@ -33,7 +33,7 @@ export async function handleCreateCharacter(args) {
 
     // Look for "New Character" button
     const newCharLocator = page.locator(
-      'button:has-text("New Character"), button:has-text("Créer"), button:has-text("Nouveau"), text=New Character, text=Nouveau'
+      'button:has-text("New Character"), button:has-text("Créer"), button:has-text("Nouveau"), button:has-text("Nuevo personaje"), button:has-text("Crear"), text=New Character, text=Nouveau, text=Nuevo personaje'
     ).first();
 
     if (!await newCharLocator.isVisible().catch(() => false)) {

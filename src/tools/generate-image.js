@@ -298,7 +298,7 @@ export async function handleGenerateImage(args) {
       }
 
       const hasDownload = await page.locator(
-        'text=Télécharger, text=download, [aria-label*="download"]'
+        'text=Télécharger, text=Descargar, text=download, [aria-label*="download"], [aria-label*="Descargar"]'
       ).first().isVisible().catch(() => false);
       if (hasDownload) {
         logger.info('Download button appeared after generation');

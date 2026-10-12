@@ -102,6 +102,9 @@ export async function createNewProject(page, name) {
     'button:has-text("New project")',
     'a:has-text("New project")',
     '[aria-label*="New project"]',
+    'button:has-text("Nuevo proyecto")',
+    'a:has-text("Nuevo proyecto")',
+    '[aria-label*="Nuevo proyecto"]',
   ];
 
   let clicked = false;
@@ -163,6 +166,8 @@ export async function createNewProject(page, name) {
           'button:has-text("Confirmer")',
           'button:has-text("OK")',
           'button:has-text("Create")',
+          'button:has-text("Crear")',
+          'button:has-text("Confirmar")',
           '[type="submit"]',
         ];
         for (const cs of confirmSelectors) {
@@ -449,7 +454,7 @@ export async function switchToImageMode(page) {
   }
 
   logger.info('Trying Vidéo dropdown fallback...');
-  const videoButton = page.locator('button:has-text("Vidéo")').first();
+  const videoButton = page.locator('button:has-text("Vidéo"), button:has-text("Vídeo"), button:has-text("Video")').first();
   if (await videoButton.isVisible().catch(() => false)) {
     await videoButton.click();
     await page.waitForTimeout(1500);
